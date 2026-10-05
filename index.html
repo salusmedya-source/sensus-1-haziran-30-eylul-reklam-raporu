@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensus Wine & Food - Dijital Reklam Performans Raporu</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --brand-primary: #681628; /* Sensus Bordeaux */
+            --brand-light: #F5EBEF;
+            --text-main: #2C3035; /* Anthracite */
+            --text-muted: #596068;
+            --bg-page: #FCFAF8; /* Light beige/off-white */
+            --bg-card: #FFFFFF;
+            --border-color: #E6DFE2;
+            --font-family: 'Inter', sans-serif;
+            --alert-red: #B91C1C;
+        }
+
+        /* Essential A4 Print CSS */
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
+        html, body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            padding: 0;
+            background-color: #d1d5db; /* Gray background for web view */
+            font-family: var(--font-family);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Main Page Container - EXACT A4 proportions and strict single page limits */
+        .report-page {
+            width: 210mm;
+            height: 297mm;
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent ANY overflow */
+            padding: 8mm 10mm;
+            background-color: var(--bg-page);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                background-color: transparent;
+            }
+            .report-page {
+                box-shadow: none;
+                page-break-after: avoid;
+                break-after: avoid;
+                overflow: hidden;
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        h1, h2, h3, p { line-height: 1.2; }
+
+        .section-title {
+            font-size: 10pt;
+            font-weight: 700;
+            color: var(--brand-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 5px 8px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid var(--brand-primary);
+            padding-bottom: 2px;
+            height: 18mm;
+        }
+        .header-title { font-size: 18pt; font-weight: 700; color: var(--brand-primary); letter-spacing: 0.5px; line-height: 1;}
+        .header-subtitle { font-size: 10pt; font-weight: 500; color: var(--text-muted); margin-top: 2px;}
+        .header-date { font-size: 9pt; font-weight: 600; background: var(--brand-light); color: var(--brand-primary); padding: 3px 6px; border-radius: 4px; }
+
+        /* S1: KPIs */
+        .kpi-container { height: 26mm; display: flex; flex-direction: column; justify-content: center; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 3px; }
+        .kpi-box { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 3px; text-align: center; }
+        .kpi-label { font-size: 7.5pt; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+        .kpi-val { font-size: 10.5pt; font-weight: 700; color: var(--brand-primary); }
+        .kpi-sub-row { display: flex; justify-content: center; gap: 20px; font-size: 8.5pt; font-weight: 500; color: var(--text-muted); }
+        .kpi-sub-row span { font-weight: 700; color: var(--text-main); }
+
+        /* S2: Ana Performans Özeti */
+        .summary-section { height: 42mm; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 8.5pt; border-bottom: 1px solid #F0F0F0; padding: 2px 0; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { font-weight: 500; }
+        .stat-val { font-weight: 700; }
+        
+        .highlight-box { background: var(--brand-light); border-left: 3px solid var(--brand-primary); padding: 4px 6px; margin-bottom: 4px; }
+        .highlight-title { font-size: 8.5pt; font-weight: 700; color: var(--brand-primary); }
+        .highlight-data { font-size: 9pt; font-weight: 700; margin: 1px 0; }
+        .highlight-sub { font-size: 8pt; color: var(--text-muted); }
+
+        .alert-text { font-size: 8pt; color: var(--alert-red); font-style: italic; margin-top: 4px; display: block; line-height: 1.2;}
+        .expensive-val { color: var(--alert-red); font-weight: 700; }
+
+        /* S3: Chart */
+        .chart-section { height: 50mm; position: relative; }
+        .chart-wrapper { width: 100%; height: 40mm; margin-top: 2px; }
+
+        /* S4: Karşılaştırma */
+        .vs-section { height: 28mm; }
+        .vs-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 3px;}
+        .vs-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; padding: 5px 8px; }
+        .vs-card.winner { border-color: var(--brand-primary); background: var(--brand-light); }
+        .vs-title { font-size: 8.5pt; font-weight: 700; margin-bottom: 3px; border-bottom: 1px dashed var(--border-color); padding-bottom: 2px; }
+        .vs-comment { text-align: center; font-size: 8.5pt; font-weight: 600; color: var(--brand-primary); font-style: italic; }
+
+        /* S5: Diğer Kampanyalar */
+        .others-section { height: 42mm; }
+        .mini-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .mini-table th { font-size: 7.5pt; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border-color); padding-bottom: 2px; }
+        .mini-table td { font-size: 8pt; padding: 2px 0; border-bottom: 1px solid #F0F0F0; }
+        .mini-table tr:last-child td { border-bottom: none; }
+        .data-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; font-size: 7.5pt; margin-top: 3px; }
+        .data-item { background: #f9f9f9; padding: 3px 5px; border-radius: 3px; }
+        .data-item-label { color: var(--text-muted); display: block; margin-bottom: 1px;}
+        .data-item-val { font-weight: 700; color: var(--text-main); }
+        .reach-comment { font-size: 8pt; color: #D97706; font-style: italic; text-align: center; margin-top: 3px; }
+
+        /* S6: Sonuç */
+        .conclusion-section { height: 32mm; background: var(--text-main); color: white; padding: 6px 10px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between;}
+        .conclusion-list { margin-left: 12px; font-size: 8.5pt; }
+        .conclusion-list li { margin-bottom: 2px; }
+        .conclusion-final { font-size: 9pt; font-weight: 700; color: #E8D3C4; text-align: center; border-top: 1px solid #444; padding-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="report-page">
+        
+        <!-- HEADER -->
+        <div class="header">
+            <div>
+                <div class="header-title">SENSUS WINE & FOOD</div>
+                <div class="header-subtitle">Dijital Reklam Performans Raporu</div>
+            </div>
+            <div class="header-date">1 Haziran – 30 Eylül 2026</div>
+        </div>
+
+        <!-- 1. GENEL PERFORMANS -->
+        <div class="kpi-container">
+            <div class="kpi-grid">
+                <div class="kpi-box">
+                    <div class="kpi-label">Toplam Harcama</div>
+                    <div class="kpi-val">195.746,07 TL</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Toplam Erişim</div>
+                    <div class="kpi-val">2.132.675</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Toplam Gösterim</div>
+                    <div class="kpi-val">5.138.398</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Toplam Tıklama</div>
+                    <div class="kpi-val">81.167</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Genel CPM</div>
+                    <div class="kpi-val">38,09 TL</div>
+                </div>
+            </div>
+            <div class="kpi-sub-row">
+                <div>CTR: <span>%1,58</span></div>
+                <div>CPC: <span>2,41 TL</span></div>
+                <div>Sıklık: <span>2,41</span></div>
+            </div>
+        </div>
+
+        <!-- 2. ANA PERFORMANS ÖZETİ -->
+        <div class="summary-section grid-2">
+            <!-- Sol Kolon -->
+            <div class="card">
+                <div class="section-title">Profil Ziyareti Performansı</div>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 4px;">
+                    <div style="flex: 1; background: #f9f9f9; padding: 3px; border-radius: 4px; text-align: center;">
+                        <div class="stat-label" style="font-size: 7.5pt; color: var(--text-muted);">Toplam Profil Ziyareti</div>
+                        <div class="stat-val" style="font-size: 10pt; color: var(--brand-primary);">79.982</div>
+                    </div>
+                    <div style="flex: 1; background: #f9f9f9; padding: 3px; border-radius: 4px; text-align: center;">
+                        <div class="stat-label" style="font-size: 7.5pt; color: var(--text-muted);">Toplam Harcama</div>
+                        <div class="stat-val" style="font-size: 10pt; color: var(--brand-primary);">153.411,96 TL</div>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <div class="highlight-title">En başarılı reklam: Salı ve Perşembe</div>
+                    <div class="highlight-data">26.572 profil ziyareti | 1,13 TL sonuç maliyeti</div>
+                    <div class="highlight-sub">%3,53 CTR</div>
+                </div>
+
+                <div class="stat-label" style="font-size: 8pt; color: var(--text-muted); margin-bottom: 1px;">En düşük maliyetli diğer reklamlar:</div>
+                <div class="stat-row">
+                    <span>Kadehe Karışan Nakaratlar – 15.07</span>
+                    <span class="stat-val">1,33 TL</span>
+                </div>
+                <div class="stat-row">
+                    <span>Bir Kadeh Teselli – 08.07</span>
+                    <span class="stat-val">1,45 TL</span>
+                </div>
+                <div class="stat-row">
+                    <span>Kadehe Karışan Nakaratlar – 12.08</span>
+                    <span class="stat-val">1,56 TL</span>
+                </div>
+            </div>
+
+            <!-- Sağ Kolon -->
+            <div class="card">
+                <div class="section-title">Dikkat Çeken Reklamlar</div>
+                <div style="height: 2px;"></div>
+                
+                <div class="stat-row">
+                    <span class="stat-label">The Perfect Pairing Exists</span>
+                    <span class="expensive-val">4,99 TL <span style="font-size: 7pt; font-weight:normal; color:var(--text-muted);">/ profil ziyareti</span></span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Where Flavor Meets Feeling</span>
+                    <span class="expensive-val">4,24 TL <span style="font-size: 7pt; font-weight:normal; color:var(--text-muted);">/ profil ziyareti</span></span>
+                </div>
+                <div class="stat-row" style="border-bottom: none;">
+                    <span class="stat-label">Sensus Antalya’da Her Hafta</span>
+                    <span class="expensive-val">4,22 TL <span style="font-size: 7pt; font-weight:normal; color:var(--text-muted);">/ profil ziyareti</span></span>
+                </div>
+
+                <span class="alert-text">“Bu reklamlarda sonuç maliyetleri grubun geri kalanına göre belirgin biçimde daha yüksek.”</span>
+            </div>
+        </div>
+
+        <!-- 3. KARŞILAŞTIRMA GRAFİĞİ -->
+        <div class="chart-section card">
+            <div class="section-title" style="border-bottom: none; margin-bottom: 0;">Profil Ziyaretine Göre En Yüksek Performans</div>
+            <div class="chart-wrapper">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 4. EN ÇARPICI KARŞILAŞTIRMA -->
+        <div class="vs-section">
+            <div class="vs-cards">
+                <div class="vs-card">
+                    <div class="vs-title" style="color: var(--text-muted);">Sensus Antalya’da Her Hafta</div>
+                    <div class="stat-row"><span>Harcama:</span> <span class="stat-val">27.178,70 TL</span></div>
+                    <div class="stat-row"><span>Profil Ziyareti:</span> <span class="stat-val">6.433</span></div>
+                    <div class="stat-row" style="border:none;"><span>Sonuç Maliyeti:</span> <span class="stat-val" style="color: var(--alert-red);">4,22 TL</span></div>
+                </div>
+                <div class="vs-card winner">
+                    <div class="vs-title" style="color: var(--brand-primary);">Salı ve Perşembe</div>
+                    <div class="stat-row"><span>Harcama:</span> <span class="stat-val">29.996,58 TL</span></div>
+                    <div class="stat-row"><span>Profil Ziyareti:</span> <span class="stat-val" style="color: var(--brand-primary);">26.572</span></div>
+                    <div class="stat-row" style="border:none;"><span>Sonuç Maliyeti:</span> <span class="stat-val" style="color: #166534;">1,13 TL</span></div>
+                </div>
+            </div>
+            <div class="vs-comment">
+                “Benzer bütçe seviyelerinde Salı ve Perşembe içeriği yaklaşık 4 kat daha fazla profil ziyareti sağlamıştır.”
+            </div>
+        </div>
+
+        <!-- 5. DİĞER KAMPANYA TÜRLERİ -->
+        <div class="others-section grid-2">
+            <!-- Mesaj/Dönüşüm -->
+            <div class="card">
+                <div class="section-title">Mesaj / Dönüşüm Reklamları</div>
+                <table class="mini-table">
+                    <thead>
+                        <tr>
+                            <th>Kampanya</th>
+                            <th style="text-align: right;">Sonuç</th>
+                            <th style="text-align: right;">Harcama</th>
+                            <th style="text-align: right;">Maliyet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Trafik K. 23.07</td>
+                            <td align="right" class="stat-val">148</td>
+                            <td align="right" class="stat-val">15.676,37 TL</td>
+                            <td align="right" class="stat-val">105,92 TL</td>
+                        </tr>
+                        <tr>
+                            <td>Cumartesi Canlı 31.07</td>
+                            <td align="right" class="stat-val">69</td>
+                            <td align="right" class="stat-val">8.932,71 TL</td>
+                            <td align="right" class="stat-val">129,46 TL</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Erişim -->
+            <div class="card">
+                <div class="section-title" style="margin-bottom: 2px;">Erişim Kampanyası</div>
+                <div style="font-size: 8pt; font-weight: 700; color: var(--text-main);">Yeni Trafik Reklam Seti</div>
+                
+                <div class="data-grid-4">
+                    <div class="data-item"><span class="data-item-label">Erişim</span><span class="data-item-val">814.488</span></div>
+                    <div class="data-item"><span class="data-item-label">Gösterim</span><span class="data-item-val">1.959.877</span></div>
+                    <div class="data-item"><span class="data-item-label">Harcama</span><span class="data-item-val">17.725,03 TL</span></div>
+                    <div class="data-item"><span class="data-item-label">CPM</span><span class="data-item-val">9,04 TL</span></div>
+                    
+                    <div class="data-item"><span class="data-item-label">Bağlantı Tık.</span><span class="data-item-val">360</span></div>
+                    <div class="data-item"><span class="data-item-label">CTR</span><span class="data-item-val">%0,018</span></div>
+                    <div class="data-item" style="grid-column: span 2;"><span class="data-item-label">CPC</span><span class="data-item-val">49,24 TL</span></div>
+                </div>
+                <div class="reach-comment">“Erişim açısından güçlü, trafik üretme açısından zayıf.”</div>
+            </div>
+        </div>
+
+        <!-- 6. STRATEJİK SONUÇ -->
+        <div class="conclusion-section">
+            <ul class="conclusion-list">
+                <li>Salı ve Perşembe kampanyası dönemin en güçlü performansını göstermiştir.</li>
+                <li>Kadehe Karışan Nakaratlar ve Bir Kadeh Teselli içerikleri düşük sonuç maliyetleriyle verimli çalışmıştır.</li>
+                <li>Yüksek sonuç maliyetli kampanyalarda kreatif, hedefleme ve bütçe dağılımı yeniden değerlendirilmelidir.</li>
+            </ul>
+            <div class="conclusion-final">
+                “Performans odaklı bütçenin düşük sonuç maliyetine sahip içeriklere yönlendirilmesi reklam verimliliğini artıracaktır.”
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            const data = {
+                labels: [
+                    "Salı ve Perşembe", 
+                    "Kadehe Karışan Nakaratlar – 12.08", 
+                    "Arabeskin En Sevilen…", 
+                    "Akdeniz’in Ruhu…", 
+                    "Sensus Antalya’da Her Hafta…", 
+                    "Bir Kadeh Teselli – 08.07"
+                ],
+                datasets: [{
+                    data: [26572, 11361, 9073, 7809, 6433, 5224],
+                    backgroundColor: [
+                        '#681628',
+                        '#9A394E',
+                        '#AF5165',
+                        '#C3697C',
+                        '#D78395',
+                        '#E9A0AE'
+                    ],
+                    borderRadius: 3,
+                    borderWidth: 0,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.9
+                }]
+            };
+
+            const formatNumber = (num) => new Intl.NumberFormat('tr-TR').format(num);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0
+                    },
+                    layout: {
+                        padding: { right: 40, left: -5, top: 2, bottom: -2 }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            grid: { display: false }
+                        },
+                        y: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: {
+                                font: { size: 8.5, weight: '500' },
+                                color: '#2C3035',
+                                autoSkip: false,
+                                padding: 4
+                            }
+                        }
+                    },
+                    animation: {
+                        onComplete: function() {
+                            const chartInstance = this;
+                            const ctx = chartInstance.ctx;
+                            ctx.font = "bold 9px Inter";
+                            ctx.textAlign = 'left';
+                            ctx.textBaseline = 'middle';
+                            
+                            this.data.datasets.forEach(function (dataset, i) {
+                                const meta = chartInstance.getDatasetMeta(i);
+                                meta.data.forEach(function (bar, index) {
+                                    const val = dataset.data[index];
+                                    ctx.fillStyle = index === 0 ? '#681628' : '#596068';
+                                    ctx.fillText(formatNumber(val), bar.x + 5, bar.y);
+                                });
+                            });
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
